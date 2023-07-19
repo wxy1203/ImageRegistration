@@ -36,7 +36,7 @@ def feature_matching(img1, img2):
     matches = sorted(matches, key=lambda x: x.distance)
 
     # Draw top matches (for visualization)
-    matching_result = cv2.drawMatches(img1, keypoints1, img2, keypoints2, matches[:50], None, flags=cv2.DrawMatchesFlags_NOT_DRAW_SINGLE_POINTS)
+    matching_result = cv2.drawMatches(img1, keypoints1, img2, keypoints2, matches[:60], None, flags=cv2.DrawMatchesFlags_NOT_DRAW_SINGLE_POINTS)
 
     # Apply affine transformation to align the images
     src_pts = np.float32([keypoints1[m.queryIdx].pt for m in matches]).reshape(-1, 1, 2)
