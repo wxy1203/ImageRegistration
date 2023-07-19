@@ -1,3 +1,4 @@
+import os
 import cv2
 import numpy as np
 
@@ -54,9 +55,9 @@ def feature_matching(img1, img2):
     return aligned_img
 
 # 读取三张图像
-img1 = cv2.imread('img1.jpg')
-img2 = cv2.imread('img2.jpg')
-img3 = cv2.imread('img3.jpg')
+img1 = cv2.imread('./raw_images/img1.jpg')
+img2 = cv2.imread('./raw_images/img2.jpg')
+img3 = cv2.imread('./raw_images/img3.jpg')
 
 # 计算三张图像的梯度幅值
 grad_magnitude_img1 = calculate_gradient_magnitude(img1)
@@ -90,6 +91,17 @@ registered_img2 = feature_matching(img2, max_grad_image)
 # Assuming you have already implemented this function
 registered_img3 = feature_matching(img3, max_grad_image)
 
-# Save the registered images
-cv2.imwrite('registered_img2.jpg', registered_img2)
-cv2.imwrite('registered_img3.jpg', registered_img3)
+# Get the current script's directory
+current_dir = os.path.dirname(__file__)
+
+# Construct the path to the output folder
+registered_images_folder = os.path.join(current_dir, 'registered_images')
+
+# Assuming img1Reg contains the image data you want to save
+# Save the image in the output folder
+output_path2 = os.path.join(registered_images_folder, 'registered_img2.jpg')
+cv2.imwrite(output_path2, registered_img2)
+output_path3 = os.path.join(registered_images_folder, 'registered_img3.jpg')
+cv2.imwrite(output_path3, registered_img3)
+
+print(f"图片已存入: {output_path2}")
