@@ -2,11 +2,11 @@ import numpy as np
 import cv2 as cv
 import matplotlib.pyplot as plt
 
-#img1 = cv.imread('img1.jpg', cv.IMREAD_GRAYSCALE)  # referenceImage
-#img2 = cv.imread('img2.jpg', cv.IMREAD_GRAYSCALE)  # sensedImage
-
-img1 = cv.imread('img1.jpg')  # referenceImage
+img1 = cv.imread('img1.jpg', cv.IMREAD_GRAYSCALE)  # referenceImage
 img2 = cv.imread('img2.jpg', cv.IMREAD_GRAYSCALE)  # sensedImage
+
+#img1 = cv.imread('img1.jpg')  # referenceImage
+#img2 = cv.imread('img2.jpg', cv.IMREAD_GRAYSCALE)  # sensedImage
 
 # Initiate SIFT detector
 sift_detector = cv.SIFT_create()
