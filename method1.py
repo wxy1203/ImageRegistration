@@ -1,9 +1,10 @@
+import os
 import numpy as np
 import cv2 as cv
 import matplotlib.pyplot as plt
 
-img1 = cv.imread('img1.jpg', cv.IMREAD_GRAYSCALE)  # referenceImage
-img2 = cv.imread('img2.jpg', cv.IMREAD_GRAYSCALE)  # sensedImage
+img1 = cv.imread('./raw_images/img1.jpg', cv.IMREAD_GRAYSCALE)  # referenceImage
+img2 = cv.imread('./raw_images/img2.jpg', cv.IMREAD_GRAYSCALE)  # sensedImage
 
 #  Resize the image by a factor of 8 on each side. If your images are
 # very high-resolution, you can try to resize even more, but if they are
@@ -64,4 +65,15 @@ img1Reg = cv.warpPerspective(
     (img2.shape[1], img2.shape[0])
 )
 
-cv.imwrite('aligned_img1.jpg', img1Reg)
+# Get the current script's directory
+current_dir = os.path.dirname(__file__)
+
+# Construct the path to the output folder
+registered_images_folder = os.path.join(current_dir, 'registered_images')
+
+# Assuming img1Reg contains the image data you want to save
+# Save the image in the output folder
+output_path = os.path.join(registered_images_folder, 'aligned_img1.jpg')
+cv.imwrite(output_path, img1Reg)
+
+print(f"图片已存入: {output_path}")
