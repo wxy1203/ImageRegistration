@@ -3,16 +3,16 @@ import cv2
 import numpy as np
 
 # 计算图像梯度幅值的函数
-def calculate_gradient_magnitude(image):
+def calculate_average_gradient_magnitude(image):
     # 转换为灰度图像
     gray_image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
     # 计算梯度
     gradient_x = cv2.Sobel(gray_image, cv2.CV_64F, 1, 0, ksize=3)
     gradient_y = cv2.Sobel(gray_image, cv2.CV_64F, 0, 1, ksize=3)
-    gradient_magnitude = cv2.magnitude(gradient_x, gradient_y)
+    gradient = cv2.magnitude(gradient_x, gradient_y)
     # 计算平均梯度幅值
-    avg_gradient_magnitude = cv2.mean(gradient_magnitude)[0]
-    return avg_gradient_magnitude
+    avg_grad = cv2.mean(gradient)[0]
+    return avg_grad
 
 # 特征点检测和匹配
 def feature_matching(img1, img2):
@@ -54,54 +54,65 @@ def feature_matching(img1, img2):
 
     return aligned_img
 
-# 读取三张图像
-img1 = cv2.imread('./raw_images/img1.jpg')
-img2 = cv2.imread('./raw_images/img2.jpg')
-img3 = cv2.imread('./raw_images/img3.jpg')
+def main():
+    # 读取三张图像
+    img1 = cv2.imread('./raw_images/img1.jpg')
+    img2 = cv2.imread('./raw_images/img2.jpg')
+    img3 = cv2.imread('./raw_images/img3.jpg')
+    img4 = cv2.imread('./raw_images/img4.jpg')
 
-# 计算三张图像的梯度幅值
-grad_magnitude_img1 = calculate_gradient_magnitude(img1)
-grad_magnitude_img2 = calculate_gradient_magnitude(img2)
-grad_magnitude_img3 = calculate_gradient_magnitude(img3)
+    # 计算三张图像的梯度幅值
+    ## 改一下avg
+    grad_magnitude_img1 = calculate_average_gradient_magnitude(img1)
+    grad_magnitude_img2 = calculate_average_gradient_magnitude(img2)
+    grad_magnitude_img3 = calculate_average_gradient_magnitude(img3)
+    grad_magnitude_img4 = calculate_average_gradient_magnitude(img4)
 
-# 找出梯度幅值最大的图像作为基准图像
-max_grad_image = None
-if grad_magnitude_img1 > grad_magnitude_img2 and grad_magnitude_img1 > grad_magnitude_img3:
-    max_grad_image = img1
-    print("最清晰的图片是img1")
-elif grad_magnitude_img2 > grad_magnitude_img1 and grad_magnitude_img2 > grad_magnitude_img3:
-    max_grad_image = img2
-    print("最清晰的图片是img2")
-else:
-    max_grad_image = img3
-    print("最清晰的图片是img3")
+    # 找出梯度幅值最大的图像作为基准图像
+    ## 用max函数
+    std_img = None
+    if grad_magnitude_img1 > grad_magnitude_img2 and grad_magnitude_img1 > grad_magnitude_img3:
+        std_img = img1
+        print("最清晰的图片是img1")
+    elif grad_magnitude_img2 > grad_magnitude_img1 and grad_magnitude_img2 > grad_magnitude_img3:
+        std_img = img2
+        print("最清晰的图片是img2")
+    else:
+        std_img = img3
+        print("最清晰的图片是img3")
 
-# # 显示梯度幅值最大的图像
-# cv2.imshow('Maximum Gradient Image', max_grad_image)
-# cv2.waitKey(0)
+    # # 显示梯度幅值最大的图像
+    # cv2.imshow('Maximum Gradient Image', std_img)
+    # cv2.waitKey(0)
 
-# # 关闭所有打开的窗口
-# cv2.destroyAllWindows()
+    # # 关闭所有打开的窗口
+    # cv2.destroyAllWindows()
 
-# Perform image registration using feature matching between img2 and max_grad_image
-# Assuming you have already implemented this function
-registered_img2 = feature_matching(img2, max_grad_image)
+    # Perform image registration using feature matching between img2 and std_img
+    # Assuming you have already implemented this function
+    registered_img2 = feature_matching(img2, std_img)
 
-# Perform image registration using feature matching between img3 and max_grad_image
-# Assuming you have already implemented this function
-registered_img3 = feature_matching(img3, max_grad_image)
+    # Perform image registration using feature matching between img3 and std_img
+    # Assuming you have already implemented this function
+    registered_img3 = feature_matching(img3, std_img)
 
-# Get the current script's directory
-current_dir = os.path.dirname(__file__)
+    registered_img4 = feature_matching(img4, std_img)
 
-# Construct the path to the output folder
-registered_images_folder = os.path.join(current_dir, 'registered_images')
+    # Get the current script's directory
+    current_dir = os.path.dirname(__file__)
 
-# Assuming img1Reg contains the image data you want to save
-# Save the image in the output folder
-output_path2 = os.path.join(registered_images_folder, 'registered_img2.jpg')
-cv2.imwrite(output_path2, registered_img2)
-output_path3 = os.path.join(registered_images_folder, 'registered_img3.jpg')
-cv2.imwrite(output_path3, registered_img3)
+    # Construct the path to the output folder
+    registered_images_folder = os.path.join(current_dir, 'reg_images')
 
-print(f"图片已存入: {output_path2}")
+    # Assuming img1Reg contains the image data you want to save
+    # Save the image in the output folder
+    output_path2 = os.path.join(registered_images_folder, 'registered_img2.jpg')
+    cv2.imwrite(output_path2, registered_img2)
+    output_path3 = os.path.join(registered_images_folder, 'registered_img3.jpg')
+    cv2.imwrite(output_path3, registered_img3)
+    output_path4 = os.path.join(registered_images_folder, 'registered_img4.jpg')
+    cv2.imwrite(output_path4, registered_img4)
+
+    print(f"图片已存入: {output_path2}")
+
+main()
