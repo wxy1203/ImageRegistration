@@ -18,36 +18,37 @@ def calculate_gradient_magnitude(image):
     return avg_gradient_magnitude
 
 # Function to perform feature matching between two images using ORB detector
-def feature_matching(img1, img2):
+def feature_matching(src, dst):
     # Initialize ORB detector
     orb = cv2.ORB_create()
 
+    # 检测特征点和计算描述子
     # Find keypoints and descriptors using ORB
-    keypoints1, descriptors1 = orb.detectAndCompute(img1, None)
-    keypoints2, descriptors2 = orb.detectAndCompute(img2, None)
+    keypoints_src, descriptors_src = orb.detectAndCompute(src, None)
+    keypoints_dst, descriptors_dst = orb.detectAndCompute(dst, None)
 
-    # Initialize Brute-Force Matcher
+    # Initialize Brute-Force Matcher蛮力
     bf = cv2.BFMatcher(cv2.NORM_HAMMING, crossCheck=True)
 
     # Match keypoints
-    matches = bf.match(descriptors1, descriptors2)
+    matches = bf.match(descriptors_src, descriptors_dst)
 
     # Sort matches based on distance (lower is better)
     matches = sorted(matches, key=lambda x: x.distance)
 
     # Draw top matches (for visualization)
-    matching_result = cv2.drawMatches(img1, keypoints1, img2, keypoints2, matches[:60], None, flags=cv2.DrawMatchesFlags_NOT_DRAW_SINGLE_POINTS)
+    matching_result = cv2.drawMatches(src, keypoints_src, dst, keypoints_dst, matches[:60], None, flags=cv2.DrawMatchesFlags_NOT_DRAW_SINGLE_POINTS)
 
     # Apply affine transformation to align the images
-    src_pts = np.float32([keypoints1[m.queryIdx].pt for m in matches]).reshape(-1, 1, 2)
-    dst_pts = np.float32([keypoints2[m.trainIdx].pt for m in matches]).reshape(-1, 1, 2)
+    src_pts = np.float32([keypoints_src[m.queryIdx].pt for m in matches]).reshape(-1, 1, 2)
+    dst_pts = np.float32([keypoints_dst[m.trainIdx].pt for m in matches]).reshape(-1, 1, 2)
 
     # Find the affine transformation matrix
     M, mask = cv2.estimateAffinePartial2D(dst_pts, src_pts)
 
     # Apply the transformation to the second image
-    rows, cols, _ = img2.shape
-    registered_img2 = cv2.warpAffine(img2, M, (cols, rows))
+    rows, cols, _ = src.shape
+    registered_img2 = cv2.warpAffine(src, M, (cols, rows))
 
     return registered_img2
 
@@ -55,11 +56,13 @@ def feature_matching(img1, img2):
 img1 = cv2.imread('./raw_images/img1.jpg')
 img2 = cv2.imread('./raw_images/img2.jpg')
 img3 = cv2.imread('./raw_images/img3.jpg')
+img4 = cv2.imread('./raw_images/img4.jpg')
 
 # 计算三张图像的梯度幅值
 grad_magnitude_img1 = calculate_gradient_magnitude(img1)
 grad_magnitude_img2 = calculate_gradient_magnitude(img2)
 grad_magnitude_img3 = calculate_gradient_magnitude(img3)
+grad_magnitude_img4 = calculate_gradient_magnitude(img4)
 
 # 找出梯度幅值最大的图像作为基准图像
 max_grad_image = None
@@ -88,17 +91,25 @@ registered_img2 = feature_matching(img2, max_grad_image)
 # Assuming you have already implemented this function
 registered_img3 = feature_matching(img3, max_grad_image)
 
+registered_img4 = feature_matching(img4, max_grad_image)
+
 # Get the current script's directory
 current_dir = os.path.dirname(__file__)
 
 # Construct the path to the output folder
-registered_images_folder = os.path.join(current_dir, 'registered_images')
+registered_images_folder = os.path.join(current_dir, 'reg_images')
 
 # Assuming img1Reg contains the image data you want to save
 # Save the image in the output folder
 output_path2 = os.path.join(registered_images_folder, 'ORBregistered_img2.jpg')
 cv2.imwrite(output_path2, registered_img2)
+
+print(cv2.imwrite(output_path2, registered_img2))
+
 output_path3 = os.path.join(registered_images_folder, 'ORBregistered_img3.jpg')
 cv2.imwrite(output_path3, registered_img3)
+
+output_path4 = os.path.join(registered_images_folder, 'ORBregistered_img4.jpg')
+cv2.imwrite(output_path4, registered_img4)
 
 print(f"图片已存入: {output_path2}")

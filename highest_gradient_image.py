@@ -15,26 +15,27 @@ def calculate_average_gradient_magnitude(image):
     return avg_grad
 
 # 特征点检测和匹配
-def feature_matching(img1, img2):
+def feature_matching(src, dst):
     # 转换为灰度图像
-    gray_img1 = cv2.cvtColor(img1, cv2.COLOR_BGR2GRAY)
-    gray_img2 = cv2.cvtColor(img2, cv2.COLOR_BGR2GRAY)
+    gray_img_src = cv2.cvtColor(src, cv2.COLOR_BGR2GRAY)
+    gray_img_dst = cv2.cvtColor(dst, cv2.COLOR_BGR2GRAY)
 
     # 初始化SIFT特征检测器
     sift = cv2.SIFT_create()
 
     # 检测特征点和计算描述子
-    kp1, des1 = sift.detectAndCompute(gray_img1, None)
-    kp2, des2 = sift.detectAndCompute(gray_img2, None)
+    kp_src, des_src = sift.detectAndCompute(gray_img_src, None)
+    kp_dst, des_dst = sift.detectAndCompute(gray_img_dst, None)
 
     # 初始化FLANN基于特征匹配器
+    ## 参数？？
     FLANN_INDEX_KDTREE = 0
     index_params = dict(algorithm=FLANN_INDEX_KDTREE, trees=5)
     search_params = dict(checks=50)
     flann = cv2.FlannBasedMatcher(index_params, search_params)
 
     # 特征点匹配
-    matches = flann.knnMatch(des1, des2, k=2)
+    matches = flann.knnMatch(des_src, des_dst, k=2)
 
     # 保留好的匹配结果
     good_matches = []
@@ -43,14 +44,14 @@ def feature_matching(img1, img2):
             good_matches.append(m)
 
     # 获取匹配特征点的坐标
-    src_pts = np.float32([kp1[m.queryIdx].pt for m in good_matches]).reshape(-1, 1, 2)
-    dst_pts = np.float32([kp2[m.trainIdx].pt for m in good_matches]).reshape(-1, 1, 2)
+    src_pts = np.float32([kp_src[m.queryIdx].pt for m in good_matches]).reshape(-1, 1, 2)
+    dst_pts = np.float32([kp_dst[m.trainIdx].pt for m in good_matches]).reshape(-1, 1, 2)
 
     # 计算单应性矩阵
     H, _ = cv2.findHomography(src_pts, dst_pts, cv2.RANSAC, 5.0)
 
     # 对图像进行配准
-    aligned_img = cv2.warpPerspective(img2, H, (img1.shape[1], img1.shape[0]))
+    aligned_img = cv2.warpPerspective(src, H, (dst.shape[1], dst.shape[0]))
 
     return aligned_img
 
@@ -60,6 +61,7 @@ def main():
     img2 = cv2.imread('./raw_images/img2.jpg')
     img3 = cv2.imread('./raw_images/img3.jpg')
     img4 = cv2.imread('./raw_images/img4.jpg')
+    img5 = cv2.imread('./raw_images/img5.jpg')
 
     # 计算三张图像的梯度幅值
     ## 改一下avg
@@ -67,6 +69,7 @@ def main():
     grad_magnitude_img2 = calculate_average_gradient_magnitude(img2)
     grad_magnitude_img3 = calculate_average_gradient_magnitude(img3)
     grad_magnitude_img4 = calculate_average_gradient_magnitude(img4)
+    grad_magnitude_img5 = calculate_average_gradient_magnitude(img5)
 
     # 找出梯度幅值最大的图像作为基准图像
     ## 用max函数
@@ -97,6 +100,7 @@ def main():
     registered_img3 = feature_matching(img3, std_img)
 
     registered_img4 = feature_matching(img4, std_img)
+    registered_img5 = feature_matching(img5, std_img)
 
     # Get the current script's directory
     current_dir = os.path.dirname(__file__)
@@ -108,10 +112,14 @@ def main():
     # Save the image in the output folder
     output_path2 = os.path.join(registered_images_folder, 'registered_img2.jpg')
     cv2.imwrite(output_path2, registered_img2)
+
     output_path3 = os.path.join(registered_images_folder, 'registered_img3.jpg')
     cv2.imwrite(output_path3, registered_img3)
+    
     output_path4 = os.path.join(registered_images_folder, 'registered_img4.jpg')
     cv2.imwrite(output_path4, registered_img4)
+    output_path5 = os.path.join(registered_images_folder, 'registered_img5.jpg')
+    cv2.imwrite(output_path5, registered_img5)
 
     print(f"图片已存入: {output_path2}")
 
