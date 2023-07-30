@@ -7,11 +7,11 @@ def calculate_average_gradient_magnitude(image):
     # 转换为灰度图像
     gray_image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
     # 计算梯度
-    gradient_x = cv2.Sobel(gray_image, cv2.CV_64F, 1, 0, ksize=3)
-    gradient_y = cv2.Sobel(gray_image, cv2.CV_64F, 0, 1, ksize=3)
-    gradient = cv2.magnitude(gradient_x, gradient_y)
+    grad_x = cv2.Sobel(gray_image, cv2.CV_64F, 1, 0, ksize=3)
+    grad_y = cv2.Sobel(gray_image, cv2.CV_64F, 0, 1, ksize=3)
+    grad = cv2.magnitude(grad_x, grad_y)
     # 计算平均梯度幅值
-    avg_grad = cv2.mean(gradient)[0]
+    avg_grad = cv2.mean(grad)[0]
     return avg_grad
 
 # 特征点检测和匹配
@@ -23,7 +23,7 @@ def feature_matching(src, dst):
     # 初始化SIFT特征检测器
     sift = cv2.SIFT_create()
 
-    # 检测特征点和计算描述子
+    # 检测特征点和计算描述子 keypoint & descriptor
     kp_src, des_src = sift.detectAndCompute(gray_img_src, None)
     kp_dst, des_dst = sift.detectAndCompute(gray_img_dst, None)
 
@@ -63,26 +63,38 @@ def main():
     img4 = cv2.imread('./raw_images/img4.jpg')
     img5 = cv2.imread('./raw_images/img5.jpg')
 
+    # 改成图像数组
+    Img = np.array(img1, img2, img3, img4, img5)
+
     # 计算三张图像的梯度幅值
     ## 改一下avg
-    grad_magnitude_img1 = calculate_average_gradient_magnitude(img1)
-    grad_magnitude_img2 = calculate_average_gradient_magnitude(img2)
-    grad_magnitude_img3 = calculate_average_gradient_magnitude(img3)
-    grad_magnitude_img4 = calculate_average_gradient_magnitude(img4)
-    grad_magnitude_img5 = calculate_average_gradient_magnitude(img5)
+    grad_magnitude_img = calculate_average_gradient_magnitude(img1)
+    std_img = img1
+    # grad_magnitude_img2 = calculate_average_gradient_magnitude(img2)
+    # grad_magnitude_img3 = calculate_average_gradient_magnitude(img3)
+    # grad_magnitude_img4 = calculate_average_gradient_magnitude(img4)
+    # grad_magnitude_img5 = calculate_average_gradient_magnitude(img5)
+    for i in range(Img.len()-1):
+        grad = calculate_average_gradient_magnitude(Img[i+1])
+        if grad > grad_magnitude_img:
+            grad_magnitude_img = grad
+            std_img = Img[i+1]
+            print("最清晰的图片是img" + str(i+1))
+
+
 
     # 找出梯度幅值最大的图像作为基准图像
     ## 用max函数
-    std_img = None
-    if grad_magnitude_img1 > grad_magnitude_img2 and grad_magnitude_img1 > grad_magnitude_img3:
-        std_img = img1
-        print("最清晰的图片是img1")
-    elif grad_magnitude_img2 > grad_magnitude_img1 and grad_magnitude_img2 > grad_magnitude_img3:
-        std_img = img2
-        print("最清晰的图片是img2")
-    else:
-        std_img = img3
-        print("最清晰的图片是img3")
+    # std_img = None
+    # if grad_magnitude_img1 > grad_magnitude_img2 and grad_magnitude_img1 > grad_magnitude_img3:
+    #     std_img = img1
+    #     print("最清晰的图片是img1")
+    # elif grad_magnitude_img2 > grad_magnitude_img1 and grad_magnitude_img2 > grad_magnitude_img3:
+    #     std_img = img2
+    #     print("最清晰的图片是img2")
+    # else:
+    #     std_img = img3
+    #     print("最清晰的图片是img3")
 
     # # 显示梯度幅值最大的图像
     # cv2.imshow('Maximum Gradient Image', std_img)
