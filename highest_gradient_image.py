@@ -64,24 +64,25 @@ def main():
     img5 = cv2.imread('./raw_images/img5.jpg')
 
     # 改成图像数组
-    Img = np.array(img1, img2, img3, img4, img5)
+    Img = [img1, img2, img3]
 
     # 计算三张图像的梯度幅值
     ## 改一下avg
-    grad_magnitude_img = calculate_average_gradient_magnitude(img1)
+    max_grad = calculate_average_gradient_magnitude(img1)
     std_img = img1
+    max_grad_img_idx = 1
     # grad_magnitude_img2 = calculate_average_gradient_magnitude(img2)
     # grad_magnitude_img3 = calculate_average_gradient_magnitude(img3)
     # grad_magnitude_img4 = calculate_average_gradient_magnitude(img4)
     # grad_magnitude_img5 = calculate_average_gradient_magnitude(img5)
-    for i in range(Img.len()-1):
+    for i in range(len(Img)-1):
         grad = calculate_average_gradient_magnitude(Img[i+1])
-        if grad > grad_magnitude_img:
-            grad_magnitude_img = grad
+        if grad > max_grad:
+            max_grad = grad
             std_img = Img[i+1]
-            print("最清晰的图片是img" + str(i+1))
-
-
+            max_grad_img_idx = i+1
+     
+    print("最清晰的图片是img" + str(max_grad_img_idx))
 
     # 找出梯度幅值最大的图像作为基准图像
     ## 用max函数
