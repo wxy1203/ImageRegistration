@@ -35,42 +35,49 @@ def match_keypoints(src_img, dst_img):
     good_kp_src = []
     good_kp_dst = []
     for gm in good_matches:
-        good_kp_src.append(raw_kp_src[gm.queryIdx].pt)
-        good_kp_dst.append(raw_kp_dst[gm.queryIdx].pt)
+        good_kp_src.append(raw_kp_src[gm.queryIdx])
+        good_kp_dst.append(raw_kp_dst[gm.queryIdx])
 
     return M, mask_us, good_kp_src, good_kp_dst, raw_kp_src, raw_kp_dst
 
-def draw_keypoints(img, keypoints, color):
-    for kp in keypoints:
-        x = kp.pt[0]
-        y = kp.pt[1]
-        cv2.circle(img, (x,y), 2, color, -1)
+def draw_keypoints(img, pts, color):
+    for p in pts:
+        # x = p.pt[0]
+        # y = p[1]
+        cv2.circle(img, p.pt, 2, color, -1)
 
-def draw_kp_raw_gd_us(img, raw_kp, good_kp, use_kp):
-    gray_img_dst_w_kp = cv2.cvtColor(img, cv2.COLOR_GRAY2BGR)
-    draw_keypoints(gray_img_dst_w_kp, raw_kp, (0, 0, 255))
-    draw_keypoints(gray_img_dst_w_kp, good_kp, (0, 255, 0))
-    draw_keypoints(gray_img_dst_w_kp, use_kp , (255, 0 , 0))
+def draw_kp_raw_gd_us(img, pt_rw, pt_gd, pt_us):
+    gray_img_dst_w_pt = cv2.cvtColor(img, cv2.COLOR_GRAY2BGR)
+    draw_keypoints(gray_img_dst_w_pt, pt_rw, (0, 0, 255))
+    draw_keypoints(gray_img_dst_w_pt, pt_gd, (0, 255, 0))
+    draw_keypoints(gray_img_dst_w_pt, pt_us, (255, 0, 0))
 
 
 if __name__ == "__main__":
     dst_img = cv2.imread("./raw_images/img1.jpg", cv2.IMREAD_GRAYSCALE)
     src_img = cv2.imread("./raw_images/img2.jpg", cv2.IMREAD_GRAYSCALE)
 
-    M, mask_us, src_pts_gd, dst_pts_gd, raw_kp_src, raw_kp_dst = match_keypoints(src_img, dst_img)
+    M, mask_us, kp_src_gd, kp_dst_gd, kp_src_rw, kp_dst_rw = match_keypoints(src_img, dst_img)
 
-    src_use_kp = [src_pts_gd[i] for i, m in enumerate(mask_us) if m == 1]
-    draw_kp_raw_gd_us(src_img, raw_kp_src, src_pts_gd, src_use_kp)
+    kp_src_us = [kp_src_gd[i] for i, m in enumerate(mask_us) if m == 1]
+    draw_kp_raw_gd_us(src_img, kp_src_rw, kp_src_gd, kp_src_us)
+# 把kp改成pt
+    kp_dst_us = [kp_dst_gd[i] for i, m in enumerate(mask_us) if m == 1]
+    draw_kp_raw_gd_us(dst_img, kp_dst_rw, kp_dst_gd, kp_dst_us)
 
-    dst_use_kp = [dst_pts_gd[i] for i, m in enumerate(mask_us) if m == 1]
-    draw_kp_raw_gd_us(dst_img, raw_kp_dst, dst_pts_gd, dst_use_kp)
+    map_pt_src_rw = [0 for i in range(len(kp_src_rw))]
+    map_pt_src_gd = [0 for i in range(len(kp_src_gd))]
+    map_pt_src_us = [0 for i in range(len(kp_src_us))]
 
-    map_src_kp_raw = np.dot(M, raw_kp_src)
-    map_src_kp_good = np.dot(M, src_pts_gd)
-    map_src_kp_use = np.dot(M, src_use_kp)
+    for i in range(len(kp_src_rw)):
+        map_pt_src_rw[i] = np.dot(M, (kp_src_rw[i].pt[0], kp_src_rw[i].pt[1], 0))
+    for i in range(len(kp_src_gd)):
+        map_pt_src_gd[i] = np.dot(M, (kp_src_gd[i].pt[0], kp_src_gd[i].pt[1], 0))
+    for i in range(len(kp_src_us)):
+        map_pt_src_us[i] = np.dot(M, (kp_src_us[i].pt[0], kp_src_us[i].pt[1], 0))
 
     img_src_dst_cmp = dst_img
-    draw_kp_raw_gd_us(img_src_dst_cmp, map_src_kp_raw, map_src_kp_good, map_src_kp_use)
+    draw_kp_raw_gd_us(img_src_dst_cmp, map_pt_src_rw, map_pt_src_gd, map_pt_src_us)
 
 
     # img2_with_keypoints = cv2.cvtColor(img2, cv2.COLOR_GRAY2BGR)
