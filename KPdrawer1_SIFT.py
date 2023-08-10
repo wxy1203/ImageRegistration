@@ -1,6 +1,7 @@
 import cv2
 import numpy as np
 
+
 def match_keypoints(src_img, dst_img):
     # 使用SIFT算法进行特征点检测和匹配
     sift = cv2.SIFT_create()
@@ -12,15 +13,15 @@ def match_keypoints(src_img, dst_img):
     index_params = dict(algorithm=FLANN_INDEX_KDTREE, trees=5)
     search_params = dict(checks=50)
     flann = cv2.FlannBasedMatcher(index_params, search_params)
-    raw_matches = flann.knnMatch(des_src, des_dst, k=2)
+    rawSrcQrySet = flann.knnMatch(des_src, des_dst, k=2)
 
     # 保留匹配度较高的特征点
     good_matches = []
-    for m, n in raw_matches:
+    for m, n in rawSrcQrySet:
         if m.distance < 0.7 * n.distance:
             good_matches.append(m)
 
-    # 提取匹配点的坐标
+    # 提取匹配点的坐标s
     #src_pts_gd = np.float32([raw_kp1[m.queryIdx].pt for m in good_matches]).reshape(-1, 1, 2)
     #dst_pts_gd = np.float32([raw_kp2[m.trainIdx].pt for m in good_matches]).reshape(-1, 1, 2)
 
@@ -37,13 +38,13 @@ def match_keypoints(src_img, dst_img):
     good_kp_dst = []
     for gm in good_matches:
         good_kp_src.append(ini_kp_src[gm.queryIdx])
-        good_kp_dst.append(ini_kp_dst[gm.queryIdx])
+        good_kp_dst.append(ini_kp_dst[gm.trainIdx])
 
     raw_kp_src = []
     raw_kp_dst = []
-    for gm in good_matches:
-        raw_kp_src.append(ini_kp_src[gm.queryIdx])
-        raw_kp_dst.append(ini_kp_dst[gm.queryIdx])
+    for m, n in rawSrcQrySet:
+        raw_kp_src.append(ini_kp_src[m.queryIdx])
+        raw_kp_dst.append(ini_kp_dst[m.trainIdx])  # m的distance更小，忽略n
 
     return M, mask_us, good_kp_src, good_kp_dst, raw_kp_src, raw_kp_dst
 
@@ -63,7 +64,7 @@ def draw_points(img, pts, r, color, p_style):
 def draw_lines(img, pts, map_pts, color):
     n_Ln = min(len(pts), len(map_pts))
     for i in range(n_Ln):
-        if i % 50 > 0:
+        if i % 50 == 1000:
             continue
         else:
             x = int(pts[i][0] + 0.5)
@@ -105,7 +106,7 @@ def draw_df_raw_gd_us(img, b2gray,
                     img_clr[i][j][k] = img[i][j]
         img = img_clr
 
-    img = draw_lines(img, pt_rw, map_pt_rw, (255, 0, 0))  # BGR
+    # img = draw_lines(img, pt_rw, map_pt_rw, (255, 0, 0))  # BGR
     img = draw_lines(img, pt_gd, map_pt_gd, (0, 255, 0))
     img = draw_lines(img, pt_us, map_pt_us, (0, 0, 255))
     return img
@@ -116,6 +117,8 @@ if __name__ == "__main__":
     src_img = cv2.imread("./raw_images/img2.jpg")
 
     M, mask_us, kp_src_gd, kp_dst_gd, kp_src_rw, kp_dst_rw = match_keypoints(src_img, dst_img)
+
+    MI = np.linalg.inv(M)
 
     pt_src_rw = [kp_src_rw[i].pt for i in range(len(kp_src_rw))]
     pt_dst_rw = [kp_dst_rw[i].pt for i in range(len(kp_dst_rw))]
@@ -130,21 +133,39 @@ if __name__ == "__main__":
     map_pt_src_gd = [0 for i in range(len(kp_src_gd))]
     map_pt_src_us = [0 for i in range(len(pt_src_us))]
 
-    for i in range(len(pt_src_rw)):
-        map_pt_src_rw[i] = np.dot(M, (pt_src_rw[i][0], pt_src_rw[i][1], 0))
-    for i in range(len(pt_src_gd)):
-        map_pt_src_gd[i] = np.dot(M, (pt_src_gd[i][0], pt_src_gd[i][1], 0))
-    for i in range(len(pt_src_us)):
-        map_pt_src_us[i] = np.dot(M, (pt_src_us[i][0], pt_src_us[i][1], 0))
+    map_pt_dst_rw = [0 for i in range(len(kp_dst_rw))]
+    map_pt_dst_gd = [0 for i in range(len(kp_dst_gd))]
+    map_pt_dst_us = [0 for i in range(len(pt_dst_us))]
 
-    img_src_dst_cmp = dst_img.copy()
+    # for i in range(len(pt_src_rw)):
+    #     map_pt_src_rw[i] = np.dot(M, (pt_src_rw[i][0], pt_src_rw[i][1], 0))
+    # for i in range(len(pt_src_gd)):
+    #     map_pt_src_gd[i] = np.dot(M, (pt_src_gd[i][0], pt_src_gd[i][1], 0))
+    # for i in range(len(pt_src_us)):
+    #     map_pt_src_us[i] = np.dot(M, (pt_src_us[i][0], pt_src_us[i][1], 0))
+
+    for i in range(len(pt_dst_rw)):
+        map_pt_dst_rw[i] = np.dot(MI, (pt_dst_rw[i][0], pt_dst_rw[i][1], 0))
+    for i in range(len(pt_dst_gd)):
+        map_pt_dst_gd[i] = np.dot(MI, (pt_dst_gd[i][0], pt_dst_gd[i][1], 0))
+    for i in range(len(pt_dst_us)):
+        map_pt_dst_us[i] = np.dot(MI, (pt_dst_us[i][0], pt_dst_us[i][1], 0))
+
+    # for i in range(len(pt_src_rw)):
+    #     map_pt_src_rw[i] = np.dot(MI, (pt_src_rw[i][0], pt_src_rw[i][1], 0))
+    # for i in range(len(pt_src_gd)):
+    #     map_pt_src_gd[i] = np.dot(MI, (pt_src_gd[i][0], pt_src_gd[i][1], 0))
+    # for i in range(len(pt_src_us)):
+    #     map_pt_src_us[i] = np.dot(MI, (pt_src_us[i][0], pt_src_us[i][1], 0))
+
+    img_src_dst_cmp = src_img.copy()
 
     src_img = draw_pt_raw_gd_us(src_img, 1, pt_src_rw, pt_src_gd, pt_src_us, 0)
     dst_img = draw_pt_raw_gd_us(dst_img, 1, pt_dst_rw, pt_dst_gd, pt_dst_us, 0)
     # cv2.imshow("Dst Image Registration", dst_img)
     # cv2.waitKey(0)
     img_src_dst_cmp = draw_pt_raw_gd_us(img_src_dst_cmp, 1, map_pt_src_rw, map_pt_src_gd, map_pt_src_us, 1)
-    img_src_dst_cmp = draw_pt_raw_gd_us(img_src_dst_cmp, 0,  pt_dst_rw, pt_dst_gd, pt_dst_us, 0)
+    img_src_dst_cmp = draw_pt_raw_gd_us(img_src_dst_cmp, 0,  pt_src_rw, pt_src_gd, pt_src_us, 0)
 
     # n_fine = 5
     # pt_fine_rw = pt_dst_rw * n_fine
@@ -156,8 +177,8 @@ if __name__ == "__main__":
     ## raw 不成对； 不能用相同序号
     # img_cmp_fine = cv2.resize(img_src_dst_cmp, (img_src_dst_cmp.shape[0] * n_fine, img_src_dst_cmp.shape[1] * n_fine))
     img_src_dst_cmp = draw_df_raw_gd_us(img_src_dst_cmp, 0,
-                                        pt_dst_rw, pt_dst_gd, pt_dst_us,
-                                        map_pt_src_rw, map_pt_src_gd, map_pt_src_us)
+                                        pt_src_rw, pt_src_gd, pt_src_us,
+                                        map_pt_dst_rw, map_pt_dst_gd, map_pt_dst_us)
 
     # cv2.imshow("Src Image Registration", src_img)
     # cv2.waitKey(0)
