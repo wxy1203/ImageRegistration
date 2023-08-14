@@ -117,8 +117,9 @@ if __name__ == "__main__":
     src_img = cv2.imread("./raw_images/img2.jpg")
 
     M, mask_us, kp_src_gd, kp_dst_gd, kp_src_rw, kp_dst_rw = match_keypoints(src_img, dst_img)
-
     MI = np.linalg.inv(M)
+
+# ----------------------------------------------------------------------------------------------------------
 
     pt_src_rw = [kp_src_rw[i].pt for i in range(len(kp_src_rw))]
     pt_dst_rw = [kp_dst_rw[i].pt for i in range(len(kp_dst_rw))]
@@ -129,43 +130,53 @@ if __name__ == "__main__":
     pt_src_us = [kp_src_gd[i].pt for i, m in enumerate(mask_us) if m == 1]
     pt_dst_us = [kp_dst_gd[i].pt for i, m in enumerate(mask_us) if m == 1]
 
-    map_pt_src_rw = [0 for i in range(len(kp_src_rw))]
-    map_pt_src_gd = [0 for i in range(len(kp_src_gd))]
-    map_pt_src_us = [0 for i in range(len(pt_src_us))]
-
-    map_pt_dst_rw = [0 for i in range(len(kp_dst_rw))]
-    map_pt_dst_gd = [0 for i in range(len(kp_dst_gd))]
-    map_pt_dst_us = [0 for i in range(len(pt_dst_us))]
-
-    # for i in range(len(pt_src_rw)):
-    #     map_pt_src_rw[i] = np.dot(M, (pt_src_rw[i][0], pt_src_rw[i][1], 0))
-    # for i in range(len(pt_src_gd)):
-    #     map_pt_src_gd[i] = np.dot(M, (pt_src_gd[i][0], pt_src_gd[i][1], 0))
-    # for i in range(len(pt_src_us)):
-    #     map_pt_src_us[i] = np.dot(M, (pt_src_us[i][0], pt_src_us[i][1], 0))
-
-    for i in range(len(pt_dst_rw)):
-        map_pt_dst_rw[i] = np.dot(MI, (pt_dst_rw[i][0], pt_dst_rw[i][1], 0))
-    for i in range(len(pt_dst_gd)):
-        map_pt_dst_gd[i] = np.dot(MI, (pt_dst_gd[i][0], pt_dst_gd[i][1], 0))
-    for i in range(len(pt_dst_us)):
-        map_pt_dst_us[i] = np.dot(MI, (pt_dst_us[i][0], pt_dst_us[i][1], 0))
-
-    # for i in range(len(pt_src_rw)):
-    #     map_pt_src_rw[i] = np.dot(MI, (pt_src_rw[i][0], pt_src_rw[i][1], 0))
-    # for i in range(len(pt_src_gd)):
-    #     map_pt_src_gd[i] = np.dot(MI, (pt_src_gd[i][0], pt_src_gd[i][1], 0))
-    # for i in range(len(pt_src_us)):
-    #     map_pt_src_us[i] = np.dot(MI, (pt_src_us[i][0], pt_src_us[i][1], 0))
-
-    img_src_dst_cmp = src_img.copy()
-
+    img_src_bak = src_img.copy()
+    img_dst_bak = dst_img.copy()
     src_img = draw_pt_raw_gd_us(src_img, 1, pt_src_rw, pt_src_gd, pt_src_us, 0)
     dst_img = draw_pt_raw_gd_us(dst_img, 1, pt_dst_rw, pt_dst_gd, pt_dst_us, 0)
     # cv2.imshow("Dst Image Registration", dst_img)
     # cv2.waitKey(0)
+
+# ----------------------------------------------------------------------------------------------------------
+
+    map_pt_src_rw = [0 for i in range(len(kp_src_rw))]
+    map_pt_src_gd = [0 for i in range(len(kp_src_gd))]
+    map_pt_src_us = [0 for i in range(len(pt_src_us))]
+
+    for i in range(len(pt_src_rw)):
+        map_pt_src_rw[i] = np.dot(M, (pt_src_rw[i][0], pt_src_rw[i][1], 1))
+    for i in range(len(pt_src_gd)):
+        map_pt_src_gd[i] = np.dot(M, (pt_src_gd[i][0], pt_src_gd[i][1], 1))
+    for i in range(len(pt_src_us)):
+        map_pt_src_us[i] = np.dot(M, (pt_src_us[i][0], pt_src_us[i][1], 1))
+
+    img_src_dst_cmp = img_dst_bak.copy()
     img_src_dst_cmp = draw_pt_raw_gd_us(img_src_dst_cmp, 1, map_pt_src_rw, map_pt_src_gd, map_pt_src_us, 1)
-    img_src_dst_cmp = draw_pt_raw_gd_us(img_src_dst_cmp, 0,  pt_src_rw, pt_src_gd, pt_src_us, 0)
+    img_src_dst_cmp = draw_pt_raw_gd_us(img_src_dst_cmp, 0,     pt_dst_rw,     pt_dst_gd,     pt_dst_us, 0)
+
+    img_src_dst_cmp = draw_df_raw_gd_us(img_src_dst_cmp, 0,
+                                        map_pt_src_rw, map_pt_src_gd, map_pt_src_us,
+                                            pt_dst_rw,     pt_dst_gd,     pt_dst_us)
+
+    # map_pt_dst_rw = [0 for i in range(len(kp_dst_rw))]
+    # map_pt_dst_gd = [0 for i in range(len(kp_dst_gd))]
+    # map_pt_dst_us = [0 for i in range(len(pt_dst_us))]
+    #
+    # for i in range(len(pt_dst_rw)):
+    #     map_pt_dst_rw[i] = np.dot(MI, (pt_dst_rw[i][0], pt_dst_rw[i][1], 1))
+    # for i in range(len(pt_dst_gd)):
+    #     map_pt_dst_gd[i] = np.dot(MI, (pt_dst_gd[i][0], pt_dst_gd[i][1], 1))
+    # for i in range(len(pt_dst_us)):
+    #     map_pt_dst_us[i] = np.dot(MI, (pt_dst_us[i][0], pt_dst_us[i][1], 1))
+    #
+    # img_src_dst_cmp = img_src_bak.copy()
+    # img_src_dst_cmp = draw_pt_raw_gd_us(img_src_dst_cmp, 1, map_pt_dst_rw, map_pt_dst_gd, map_pt_dst_us, 1)
+    # img_src_dst_cmp = draw_pt_raw_gd_us(img_src_dst_cmp, 0,     pt_src_rw,     pt_src_gd,     pt_src_us, 0)
+    #
+    # img_src_dst_cmp = draw_df_raw_gd_us(img_src_dst_cmp, 0,
+    #                                     map_pt_dst_rw, map_pt_dst_gd, map_pt_dst_us,
+    #                                         pt_src_rw,     pt_src_gd,     pt_src_us)
+
 
     # n_fine = 5
     # pt_fine_rw = pt_dst_rw * n_fine
@@ -176,9 +187,6 @@ if __name__ == "__main__":
     # map_pt_fine_us = map_pt_src_us * n_fine
     ## raw 不成对； 不能用相同序号
     # img_cmp_fine = cv2.resize(img_src_dst_cmp, (img_src_dst_cmp.shape[0] * n_fine, img_src_dst_cmp.shape[1] * n_fine))
-    img_src_dst_cmp = draw_df_raw_gd_us(img_src_dst_cmp, 0,
-                                        pt_src_rw, pt_src_gd, pt_src_us,
-                                        map_pt_dst_rw, map_pt_dst_gd, map_pt_dst_us)
 
     # cv2.imshow("Src Image Registration", src_img)
     # cv2.waitKey(0)
