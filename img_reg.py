@@ -25,13 +25,13 @@ def feature_matching(src, dst, sift_ratio=0.7):
     # Initialize SIFT feature detector
     sift = cv2.SIFT_create()
 
-    # Detect keypoints and compute descriptors
+    # Detect keypoint and compute descriptors
     kp_src, des_src = sift.detectAndCompute(gray_img_src, None)
     kp_dst, des_dst = sift.detectAndCompute(gray_img_dst, None)
 
     # Initialize FLANN-based feature matcher
-    FLANN_INDEX_KDTREE = 0
-    index_params = dict(algorithm=FLANN_INDEX_KDTREE, trees=5)
+    flann_index_kdtree = 0
+    index_params = dict(algorithm=flann_index_kdtree, trees=5)
     search_params = dict(checks=50)
     flann = cv2.FlannBasedMatcher(index_params, search_params)
 
@@ -44,7 +44,7 @@ def feature_matching(src, dst, sift_ratio=0.7):
         if m.distance < sift_ratio * n.distance:
             good_matches.append(m)
 
-    # Extract coordinates of matching keypoints
+    # Extract coordinates of matching keypoint
     src_pts = np.float32([kp_src[m.queryIdx].pt for m in good_matches]).reshape(-1, 1, 2)
     dst_pts = np.float32([kp_dst[m.trainIdx].pt for m in good_matches]).reshape(-1, 1, 2)
 
@@ -56,52 +56,33 @@ def feature_matching(src, dst, sift_ratio=0.7):
 
     return aligned_img
 
+
 def image_reg(reg_img_dir_path, raw_img_dir_path):
 
-    LstImg_file = sorted([f for f in os.listdir(raw_img_dir_path) if f.endswith('.jpg') or f.endswith('.png')])
+    # Get a list of image files in the specified directory
+    lst_img_files = [f for f in os.listdir(raw_img_dir_path) if f.endswith('.jpg') or f.endswith('.png')]
 
-    LstImg = [cv2.imread(f) for f in LstImg_file]
+    # Get creation timestamps for each image 获得创建时间
+    img_timestamps = [os.path.getctime(os.path.join(raw_img_dir_path, f)) for f in lst_img_files]
 
-    # # 读取三张图像
-    # img1 = cv2.imread(os.path.join(raw_img_dir_path, 'img1.jpg'))
-    # img2 = cv2.imread(os.path.join(raw_img_dir_path, 'img2.jpg'))
-    # img3 = cv2.imread(os.path.join(raw_img_dir_path, 'img3.jpg'))
-    # img4 = cv2.imread(os.path.join(raw_img_dir_path, 'img4.jpg'))
-    # img5 = cv2.imread(os.path.join(raw_img_dir_path, 'img5.jpg'))
-    #
-    # # 改成图像数组
-    # Img = [img1, img2, img3]
+    # Sort images based on their timestamps 按照创建顺序 由最早到最近
+    sorted_img_files = [f for _, f in sorted(zip(img_timestamps, lst_img_files))]
 
-    # 计算三张图像的梯度幅值
-    ## 改一下avg
-    max_grad = calculate_average_gradient_magnitude(LstImg[0])
-    std_img = LstImg[0]
+    # Read images and create a list of image objects
+    lst_images = [cv2.imread(os.path.join(raw_img_dir_path, f)) for f in sorted_img_files]
+
+    # 找到最清晰的照片，作为基准照片
+    max_grad = calculate_average_gradient_magnitude(lst_images[0])
+    std_img = lst_images[0]
     max_grad_img_idx = 1
-    # grad_magnitude_img2 = calculate_average_gradient_magnitude(img2)
-    # grad_magnitude_img3 = calculate_average_gradient_magnitude(img3)
-    # grad_magnitude_img4 = calculate_average_gradient_magnitude(img4)
-    # grad_magnitude_img5 = calculate_average_gradient_magnitude(img5)
-    for i in range(len(LstImg)-1):
-        grad = calculate_average_gradient_magnitude(LstImg[i+1])
+    for i in range(len(lst_images)-1):
+        grad = calculate_average_gradient_magnitude(lst_images[i+1])
         if grad > max_grad:
             max_grad = grad
-            std_img = LstImg[i+1]
+            std_img = lst_images[i+1]
             max_grad_img_idx = i+1
      
     print("最清晰的图片是img" + str(max_grad_img_idx))
-
-    # 找出梯度幅值最大的图像作为基准图像
-    ## 用max函数
-    # std_img = None
-    # if grad_magnitude_img1 > grad_magnitude_img2 and grad_magnitude_img1 > grad_magnitude_img3:
-    #     std_img = img1
-    #     print("最清晰的图片是img1")
-    # elif grad_magnitude_img2 > grad_magnitude_img1 and grad_magnitude_img2 > grad_magnitude_img3:
-    #     std_img = img2
-    #     print("最清晰的图片是img2")
-    # else:
-    #     std_img = img3
-    #     print("最清晰的图片是img3")
 
     # # 显示梯度幅值最大的图像
     # cv2.imshow('Maximum Gradient Image', std_img)
@@ -110,28 +91,14 @@ def image_reg(reg_img_dir_path, raw_img_dir_path):
     # # 关闭所有打开的窗口
     # cv2.destroyAllWindows()
 
-    # Perform image registration using feature matching between img2 and std_img
-    # Assuming you have already implemented this function
+    for i, img in enumerate(lst_images):
+        reg_img = feature_matching(img, std_img)
 
+        # Save registered image
+        file_output_path = os.path.join(reg_img_dir_path, f"registered_{i + 1}.jpg")
+        cv2.imwrite(file_output_path, reg_img)
 
-
-    # # Get the current script's directory
-    # current_dir = os.path.dirname(__file__)
-    #
-    # # Construct the path to the output folder
-    # registered_images_folder = reg_img_dir_path
-
-    for i in range(len(LstImg)):
-        reg_img = feature_matching(LstImg[i], std_img)
-
-        # Assuming img1Reg contains the image data you want to save
-        # Save the image in the output folder
-        FOutput_path = os.path.join(reg_img_dir_path, 'registered_img', i+1, '.jpg')
-        cv2.imwrite(FOutput_path, reg_img)
-
-        print(f"图片已存入:{FOutput_path}")
-
-
+        print(f"图片已存入: {file_output_path}")
 
     # registered_img2 = feature_matching(LstImg[1], std_img)
     #
