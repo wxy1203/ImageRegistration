@@ -2,6 +2,7 @@ import os
 import cv2
 import numpy as np
 
+
 # 计算图像梯度幅值的函数
 def calculate_average_gradient_magnitude(image):
     # 转换为灰度图像
@@ -14,72 +15,77 @@ def calculate_average_gradient_magnitude(image):
     avg_grad = cv2.mean(grad)[0]
     return avg_grad
 
-# 特征点检测和匹配
-def feature_matching(src, dst):
-    # 转换为灰度图像
+
+# 特征点检测和匹配 SIFT算法传入参数
+def feature_matching(src, dst, sift_ratio=0.7):
+    # Convert to grayscale
     gray_img_src = cv2.cvtColor(src, cv2.COLOR_BGR2GRAY)
     gray_img_dst = cv2.cvtColor(dst, cv2.COLOR_BGR2GRAY)
 
-    # 初始化SIFT特征检测器
+    # Initialize SIFT feature detector
     sift = cv2.SIFT_create()
 
-    # 检测特征点和计算描述子 keypoint & descriptor
+    # Detect keypoints and compute descriptors
     kp_src, des_src = sift.detectAndCompute(gray_img_src, None)
     kp_dst, des_dst = sift.detectAndCompute(gray_img_dst, None)
 
-    # 初始化FLANN基于特征匹配器
-    ## 参数？？
+    # Initialize FLANN-based feature matcher
     FLANN_INDEX_KDTREE = 0
     index_params = dict(algorithm=FLANN_INDEX_KDTREE, trees=5)
     search_params = dict(checks=50)
     flann = cv2.FlannBasedMatcher(index_params, search_params)
 
-    # 特征点匹配
+    # Feature matching
     matches = flann.knnMatch(des_src, des_dst, k=2)
 
-    # 保留好的匹配结果
+    # Select good matches using Lowe's ratio test
     good_matches = []
     for m, n in matches:
-        if m.distance < 0.7 * n.distance:
+        if m.distance < sift_ratio * n.distance:
             good_matches.append(m)
 
-    # 获取匹配特征点的坐标
+    # Extract coordinates of matching keypoints
     src_pts = np.float32([kp_src[m.queryIdx].pt for m in good_matches]).reshape(-1, 1, 2)
     dst_pts = np.float32([kp_dst[m.trainIdx].pt for m in good_matches]).reshape(-1, 1, 2)
 
-    # 计算单应性矩阵
+    # Calculate homography matrix
     H, _ = cv2.findHomography(src_pts, dst_pts, cv2.RANSAC, 5.0)
 
-    # 对图像进行配准
+    # Perform image alignment
     aligned_img = cv2.warpPerspective(src, H, (dst.shape[1], dst.shape[0]))
 
     return aligned_img
 
-def main():
-    # 读取三张图像
-    img1 = cv2.imread('./raw_images/img1.jpg')
-    img2 = cv2.imread('./raw_images/img2.jpg')
-    img3 = cv2.imread('./raw_images/img3.jpg')
-    img4 = cv2.imread('./raw_images/img4.jpg')
-    img5 = cv2.imread('./raw_images/img5.jpg')
+def image_reg(reg_img_dir_path, raw_img_dir_path):
 
-    # 改成图像数组
-    Img = [img1, img2, img3]
+    LstImg_file = sorted([f for f in os.listdir(raw_img_dir_path) if f.endswith('.jpg') or f.endswith('.png')])
+
+    LstImg = [cv2.imread(f) for f in LstImg_file]
+
+    # # 读取三张图像
+    # img1 = cv2.imread(os.path.join(raw_img_dir_path, 'img1.jpg'))
+    # img2 = cv2.imread(os.path.join(raw_img_dir_path, 'img2.jpg'))
+    # img3 = cv2.imread(os.path.join(raw_img_dir_path, 'img3.jpg'))
+    # img4 = cv2.imread(os.path.join(raw_img_dir_path, 'img4.jpg'))
+    # img5 = cv2.imread(os.path.join(raw_img_dir_path, 'img5.jpg'))
+    #
+    # # 改成图像数组
+    # Img = [img1, img2, img3]
 
     # 计算三张图像的梯度幅值
     ## 改一下avg
-    max_grad = calculate_average_gradient_magnitude(img1)
-    std_img = img1
+    max_grad = calculate_average_gradient_magnitude(LstImg[0])
+    std_img = LstImg[0]
     max_grad_img_idx = 1
     # grad_magnitude_img2 = calculate_average_gradient_magnitude(img2)
     # grad_magnitude_img3 = calculate_average_gradient_magnitude(img3)
     # grad_magnitude_img4 = calculate_average_gradient_magnitude(img4)
     # grad_magnitude_img5 = calculate_average_gradient_magnitude(img5)
-    for i in range(len(Img)-1):
-        grad = calculate_average_gradient_magnitude(Img[i+1])
+    for i in range(len(LstImg)-1):
+        grad = calculate_average_gradient_magnitude(LstImg[i+1])
         if grad > max_grad:
             max_grad = grad
-            std_img = Img[i+1]
+            std_img = LstImg[i+1]
             max_grad_img_idx = i+1
      
     print("最清晰的图片是img" + str(max_grad_img_idx))
@@ -106,34 +112,45 @@ def main():
 
     # Perform image registration using feature matching between img2 and std_img
     # Assuming you have already implemented this function
-    registered_img2 = feature_matching(img2, std_img)
 
-    # Perform image registration using feature matching between img3 and std_img
-    # Assuming you have already implemented this function
-    registered_img3 = feature_matching(img3, std_img)
 
-    registered_img4 = feature_matching(img4, std_img)
-    registered_img5 = feature_matching(img5, std_img)
 
-    # Get the current script's directory
-    current_dir = os.path.dirname(__file__)
+    # # Get the current script's directory
+    # current_dir = os.path.dirname(__file__)
+    #
+    # # Construct the path to the output folder
+    # registered_images_folder = reg_img_dir_path
 
-    # Construct the path to the output folder
-    registered_images_folder = os.path.join(current_dir, 'reg_images')
+    for i in range(len(LstImg)):
+        reg_img = feature_matching(LstImg[i], std_img)
 
-    # Assuming img1Reg contains the image data you want to save
-    # Save the image in the output folder
-    output_path2 = os.path.join(registered_images_folder, 'registered_img2.jpg')
-    cv2.imwrite(output_path2, registered_img2)
+        # Assuming img1Reg contains the image data you want to save
+        # Save the image in the output folder
+        FOutput_path = os.path.join(reg_img_dir_path, 'registered_img', i+1, '.jpg')
+        cv2.imwrite(FOutput_path, reg_img)
 
-    output_path3 = os.path.join(registered_images_folder, 'registered_img3.jpg')
-    cv2.imwrite(output_path3, registered_img3)
-    
-    output_path4 = os.path.join(registered_images_folder, 'registered_img4.jpg')
-    cv2.imwrite(output_path4, registered_img4)
-    output_path5 = os.path.join(registered_images_folder, 'registered_img5.jpg')
-    cv2.imwrite(output_path5, registered_img5)
+        print(f"图片已存入:{FOutput_path}")
 
-    print(f"图片已存入: {output_path2}")
 
-main()
+
+    # registered_img2 = feature_matching(LstImg[1], std_img)
+    #
+    # # Perform image registration using feature matching between img3 and std_img
+    # # Assuming you have already implemented this function
+    # registered_img3 = feature_matching(LstImg[2], std_img)
+    #
+    # registered_img4 = feature_matching(img4, std_img)
+    # registered_img5 = feature_matching(img5, std_img)
+    #
+    #
+    #
+    #
+    # output_path3 = os.path.join(registered_images_folder, 'registered_img3.jpg')
+    # cv2.imwrite(output_path3, registered_img3)
+    #
+    # output_path4 = os.path.join(registered_images_folder, 'registered_img4.jpg')
+    # cv2.imwrite(output_path4, registered_img4)
+    # output_path5 = os.path.join(registered_images_folder, 'registered_img5.jpg')
+    # cv2.imwrite(output_path5, registered_img5)
+
+
