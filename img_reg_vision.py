@@ -116,7 +116,7 @@ def draw_df_raw_gd_us(img, b2gray,
 
 if __name__ == "__main__":
     dst_img = cv2.imread("./raw_images/img1.jpg")
-    src_img = cv2.imread("./raw_images/img2.jpg")
+    src_img = cv2.imread("./raw_images/img3.jpg")
 
     M, mask_us, kp_src_gd, kp_dst_gd, kp_src_rw, kp_dst_rw = match_keypoints(src_img, dst_img)
     MI = np.linalg.inv(M)
@@ -144,13 +144,18 @@ if __name__ == "__main__":
     map_pt_src_rw = [0 for i in range(len(kp_src_rw))]
     map_pt_src_gd = [0 for i in range(len(kp_src_gd))]
     map_pt_src_us = [0 for i in range(len(pt_src_us))]
+    map_k_src2dst_us = [0 for i in range(len(pt_src_us))]
 
     for i in range(len(pt_src_rw)):
-        map_pt_src_rw[i] = np.dot(M, (pt_src_rw[i][0], pt_src_rw[i][1], 1))
+        map_pt_src_rw[i] = np.dot(M, ((pt_src_rw[i][0]), (pt_src_rw[i][1]), (1)))
     for i in range(len(pt_src_gd)):
-        map_pt_src_gd[i] = np.dot(M, (pt_src_gd[i][0], pt_src_gd[i][1], 1))
+        map_pt_src_gd[i] = np.dot(M, ((pt_src_gd[i][0]), (pt_src_gd[i][1]), (1)))
     for i in range(len(pt_src_us)):
-        map_pt_src_us[i] = np.dot(M, (pt_src_us[i][0], pt_src_us[i][1], 1))
+        map_pt_src_us[i] = np.dot(M, ((pt_src_us[i][0]), (pt_src_us[i][1]), (1)))
+        # map_pt_src_us[i][0] = map_pt_src_us[i][0] / map_pt_src_us[i][2]
+        # map_pt_src_us[i][1] = map_pt_src_us[i][1] / map_pt_src_us[i][2]
+        # map_k_src2dst_us[i][0] = map_pt_src_us[i][0] / pt_dst_us[i][0]
+        # map_k_src2dst_us[i][1] = map_pt_src_us[i][1] / pt_dst_us[i][1]
 
     img_src_dst_cmp = img_dst_bak.copy()
     img_src_dst_cmp = draw_pt_raw_gd_us(img_src_dst_cmp, 1, map_pt_src_rw, map_pt_src_gd, map_pt_src_us, 1)
