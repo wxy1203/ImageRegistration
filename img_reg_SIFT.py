@@ -57,6 +57,15 @@ def feature_matching(src, dst, sift_ratio=0.7):
     return aligned_img
 
 
+def cmp_time(tm1, tm2):
+    if tm1 < tm2:
+        return -1
+    elif tm1 > tm2:
+        return 1
+    else:
+        return 0
+
+
 def image_reg(reg_img_dir_path, raw_img_dir_path):
 
     # Get a list of image files in the specified directory
@@ -65,8 +74,10 @@ def image_reg(reg_img_dir_path, raw_img_dir_path):
     # Get creation timestamps for each image 获得创建时间
     img_timestamps = [os.path.getctime(os.path.join(raw_img_dir_path, f)) for f in lst_img_files]
 
+    print(img_timestamps)
+
     # Sort images based on their timestamps 按照创建顺序 由最早到最近
-    sorted_img_files = [f for _, f in sorted(zip(img_timestamps, lst_img_files))]
+    sorted_img_files = [f for _, f in sorted(zip(img_timestamps, lst_img_files), key=lambda s: s[1])]
 
     # Read images and create a list of image objects
     lst_images = [cv2.imread(os.path.join(raw_img_dir_path, f)) for f in sorted_img_files]
@@ -100,24 +111,5 @@ def image_reg(reg_img_dir_path, raw_img_dir_path):
 
         print(f"图片已存入: {file_output_path}")
 
-    # registered_img2 = feature_matching(LstImg[1], std_img)
-    #
-    # # Perform image registration using feature matching between img3 and std_img
-    # # Assuming you have already implemented this function
-    # registered_img3 = feature_matching(LstImg[2], std_img)
-    #
-    # registered_img4 = feature_matching(img4, std_img)
-    # registered_img5 = feature_matching(img5, std_img)
-    #
-    #
-    #
-    #
-    # output_path3 = os.path.join(registered_images_folder, 'registered_img3.jpg')
-    # cv2.imwrite(output_path3, registered_img3)
-    #
-    # output_path4 = os.path.join(registered_images_folder, 'registered_img4.jpg')
-    # cv2.imwrite(output_path4, registered_img4)
-    # output_path5 = os.path.join(registered_images_folder, 'registered_img5.jpg')
-    # cv2.imwrite(output_path5, registered_img5)
 
 

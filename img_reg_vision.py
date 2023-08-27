@@ -71,8 +71,10 @@ def draw_lines(img, pts, map_pts, color):
             y = int(pts[i][1] + 0.5)
             xm = int(map_pts[i][0] + 0.5)
             ym = int(map_pts[i][1] + 0.5)
-            # if abs(x - xm) < 100 and abs(y - ym) < 100:
-            cv2.line(img, (x, y), (xm, ym), color)
+            if x > xm:
+                cv2.line(img, (x, y), (xm, ym), color)
+            else:
+                cv2.line(img, (x, y), (xm, ym), (255, 0, 0))
     return img
 
 def draw_pt_raw_gd_us(img, b2gray, pt_rw, pt_gd, pt_us, p_style):
@@ -87,7 +89,7 @@ def draw_pt_raw_gd_us(img, b2gray, pt_rw, pt_gd, pt_us, p_style):
                     img_clr[i][j][k] = img[i][j]
         img = img_clr
 
-    img = draw_points(img, pt_rw, 2, (255, 0, 0), p_style)  # BGR
+    # img = draw_points(img, pt_rw, 2, (255, 0, 0), p_style)  # BGR
     img = draw_points(img, pt_gd, 2, (0, 255, 0), p_style)
     img = draw_points(img, pt_us, 2, (0, 0, 255), p_style)
     return img

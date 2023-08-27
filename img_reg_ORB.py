@@ -2,8 +2,8 @@ import os
 import cv2
 import numpy as np
 
-## ORB (Oriented FAST and Rotated BRIEF) feature detector and matcher
-## to find correspondences between keypoints in the images
+# ORB (Oriented FAST and Rotated BRIEF) feature detector and matcher
+# to find correspondences between keypoints in the images
 
 # 计算图像梯度幅值的函数
 def calculate_gradient_magnitude(image):
